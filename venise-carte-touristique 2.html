@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Venise – Carte Touristique · Mai 2025</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IM+Fell+English:ital@0;1&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+  /* ─── Variables ─────────────────────────────────────────── */
+  :root {
+    --gold:    #b5872a;
+    --gold-lt: #d4a845;
+    --terra:   #7c3a1e;
+    --cream:   #fdf6e8;
+    --ink:     #1a120a;
+    --p0:      #c0392b;
+    --p1:      #d35400;
+    --p2:      #b7860b;
+    --p3:      #27ae60;
+    --special: #6c3483;
+  }
+
+  /* ─── Page / Print Setup ────────────────────────────────── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 420mm;
+    height: 297mm;
+    background: var(--cream);
+    font-family: 'Raleway', sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  @page {
+    size: A3 landscape;
+    margin: 0;
+  }
+
+  @media print {
+    html, body { width: 420mm; height: 297mm; overflow: hidden; }
+    .no-print { display: none !important; }
+  }
+
+  /* ─── Layout ────────────────────────────────────────────── */
+  #page {
+    width: 420mm;
+    height: 297mm;
+    display: grid;
+    grid-template-columns: 88mm 1fr;
+    grid-template-rows: 14mm 1fr 8mm;
+    background: var(--cream);
+    border: 1px solid #ddd;
+  }
+
+  /* ─── Header ────────────────────────────────────────────── */
+  #header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6mm;
+    background: var(--terra);
+    color: var(--cream);
+    border-bottom: 2px solid var(--gold);
+  }
+
+  #header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  #header h1 span {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold-lt);
+  }
+
+  #header .subtitle {
+    font-size: 7pt;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-top: 1mm;
+  }
+
+  #header .trip-info {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 9pt;
+    font-style: italic;
+    color: #f0dbb5;
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  /* ─── Sidebar ───────────────────────────────────────────── */
+  #sidebar {
+    grid-row: 2;
+    grid-column: 1;
+    padding: 3mm 3mm 2mm 4mm;
+    overflow: hidden;
+    background: var(--cream);
+    border-right: 1.5px solid var(--gold);
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+  }
+
+  /* Legend */
+  .legend-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5mm;
+  }
+
+  .legend-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--terra);
+    border-bottom: 0.5pt solid var(--gold);
+    padding-bottom: 0.5mm;
+    margin-bottom: 1mm;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 1.5mm;
+    font-size: 5.8pt;
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
+  .dot {
+    width: 3mm;
+    height: 3mm;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 0.5pt solid rgba(0,0,0,0.25);
+  }
+
+  .tag {
+    width: 5.5mm;
+    height: 3mm;
+    border-radius: 1mm;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4.5pt;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0;
+  }
+
+  /* POI list */
+  .poi-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3mm;
+  }
+
+  .poi-section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 6.5pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 1mm;
+    padding-bottom: 0.3mm;
+    border-bottom: 0.4pt solid currentColor;
+  }
+
+  .poi-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1mm;
+    font-size: 5.5pt;
+    line-height: 1.3;
+    padding: 0.2mm 0;
+  }
+
+  .poi-num {
+    width: 4mm;
+    height: 4mm;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4pt;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    margin-top: 0.3mm;
+  }
+
+  .poi-text strong {
+    font-size: 5.8pt;
+    font-weight: 600;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .poi-text em {
+    font-size: 4.8pt;
+    color: #666;
+    font-style: italic;
+    display: block;
+    line-height: 1.2;
+  }
+
+  /* ─── Map ───────────────────────────────────────────────── */
+  #map-container {
+    grid-row: 2;
+    grid-column: 2;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ─── Footer ────────────────────────────────────────────── */
+  #footer {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5mm;
+    background: var(--terra);
+    border-top: 1.5px solid var(--gold);
+    font-size: 5pt;
+    color: #d4b88a;
+    letter-spacing: 0.12em;
+  }
+
+  /* ─── Custom Leaflet Markers ────────────────────────────── */
+  .custom-marker {
+    width: 20px;
+    height: 20px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+  }
+
+  .marker-label {
+    transform: rotate(45deg);
+    font-size: 7px;
+    font-weight: 800;
+    color: white;
+    font-family: 'Raleway', sans-serif;
+    text-shadow: 0 0 2px rgba(0,0,0,0.5);
+    line-height: 1;
+    margin-top: -2px;
+    margin-left: -1px;
+  }
+
+  .special-marker {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    transform: rotate(-45deg);
+  }
+
+  /* Print button */
+  #print-btn {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10000;
+    background: var(--terra);
+    color: var(--cream);
+    border: 2px solid var(--gold);
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-family: 'Raleway', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  #print-btn:hover { background: #a04a26; }
+</style>
+</head>
+<body>
+
+<button class="no-print" id="print-btn" onclick="window.print()">🖨 Imprimer A3</button>
+
+<div id="page">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div>
+      <h1>VENEZIA <span>· La Serenissima</span></h1>
+      <div class="subtitle">Carte touristique personnalisée &nbsp;·&nbsp; 7–11 mai 2025</div>
+    </div>
+    <div class="trip-info">
+      Séjour de 4 nuits · 2 couples · Airbnb Cannaregio<br>
+      Palais des Doges · Vivaldi · Murano · Burano
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+
+    <!-- Légende priorités -->
+    <div class="legend-block">
+      <div class="legend-title">Priorités</div>
+      <div class="legend-row">
+        <div class="tag" style="background:var(--p0)">P0</div>
+        <span>Absolument incontournable</span>
+      </div>
+      <div class="legend-row">
+        <div class="tag" style="background:var(--p1)">P1</div>
+        <span>Hautement recommandé</span>
+      </div>
+      <div class="legend-row">
+        <div class="tag" style="background:var(--p2)">P2</div>
+        <span>Très intéressant</span>
+      </div>
+      <div class="legend-row">
+        <div class="tag" style="background:var(--p3)">P3</div>
+        <span>À voir si vous passez</span>
+      </div>
+      <div class="legend-row">
+        <div class="tag" style="background:var(--special)">★</div>
+        <span>Vos réservations / logement</span>
+      </div>
+    </div>
+
+    <!-- P0 -->
+    <div class="poi-section">
+      <div class="poi-section-title" style="color:var(--p0)">P0 — Absolument incontournables</div>
+
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p0)">1</div>
+        <div class="poi-text">
+          <strong>Basilique Saint-Marc</strong>
+          <em>Chefs-d'œuvre byzantins, mosaïques d'or</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p0)">2</div>
+        <div class="poi-text">
+          <strong>Palais des Doges</strong>
+          <em>Symbole du pouvoir de la Sérénissime</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p0)">3</div>
+        <div class="poi-text">
+          <strong>Pont du Rialto</strong>
+          <em>Cœur marchand de Venise depuis le XIII° s.</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p0)">4</div>
+        <div class="poi-text">
+          <strong>Grand Canal (vue Rialto/Accademia)</strong>
+          <em>La plus belle "rue" du monde</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p0)">5</div>
+        <div class="poi-text">
+          <strong>Piazza San Marco</strong>
+          <em>Le salon de l'Europe — Napoléon</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- P1 -->
+    <div class="poi-section">
+      <div class="poi-section-title" style="color:var(--p1)">P1 — Hautement recommandés</div>
+
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">6</div>
+        <div class="poi-text">
+          <strong>Santa Maria della Salute</strong>
+          <em>Baroque, dôme iconic sur le Grand Canal</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">7</div>
+        <div class="poi-text">
+          <strong>Gallerie dell'Accademia</strong>
+          <em>Bellini, Giorgione, Tintoret, Titien</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">8</div>
+        <div class="poi-text">
+          <strong>Collection Peggy Guggenheim</strong>
+          <em>Art moderne sur le Grand Canal</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">9</div>
+        <div class="poi-text">
+          <strong>Scuola Grande di San Rocco</strong>
+          <em>Tintoret — la "Chapelle Sixtine vénitienne"</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">10</div>
+        <div class="poi-text">
+          <strong>Basilique dei Frari</strong>
+          <em>Titien, Bellini — gothique sublime</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">11</div>
+        <div class="poi-text">
+          <strong>San Giorgio Maggiore</strong>
+          <em>Palladio · Vue panoramique depuis le clocher</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p1)">12</div>
+        <div class="poi-text">
+          <strong>Campo Santa Margherita</strong>
+          <em>Le campo le plus vivant, Dorsoduro</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- P2 -->
+    <div class="poi-section">
+      <div class="poi-section-title" style="color:var(--p2)">P2 — Très intéressants</div>
+
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">13</div>
+        <div class="poi-text">
+          <strong>Campanile San Marco</strong>
+          <em>Vue à 360° sur Venise et la lagune</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">14</div>
+        <div class="poi-text">
+          <strong>Libreria Acqua Alta</strong>
+          <em>Librairie culte — baignoire de livres</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">15</div>
+        <div class="poi-text">
+          <strong>Mercato di Rialto</strong>
+          <em>Fruits de mer, légumes — tôt le matin</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">16</div>
+        <div class="poi-text">
+          <strong>Campo SS Giovanni e Paolo</strong>
+          <em>Basilique + statue équestre Colleoni</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">17</div>
+        <div class="poi-text">
+          <strong>Palazzo Contarini del Bovolo</strong>
+          <em>Escalier en colimaçon caché — joyau secret</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">18</div>
+        <div class="poi-text">
+          <strong>Ghetto ebraico</strong>
+          <em>Plus vieux ghetto d'Europe — XVI° s.</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">19</div>
+        <div class="poi-text">
+          <strong>Ponte dell'Accademia</strong>
+          <em>Vue Grand Canal + coucher de soleil</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p2)">20</div>
+        <div class="poi-text">
+          <strong>Chiesa di San Zaccaria</strong>
+          <em>Bellini, crypte inondée — Castello</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- P3 -->
+    <div class="poi-section">
+      <div class="poi-section-title" style="color:var(--p3)">P3 — À voir si vous passez</div>
+
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p3)">21</div>
+        <div class="poi-text">
+          <strong>Campo San Polo</strong>
+          <em>2° plus grand campo — ambiance locale</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p3)">22</div>
+        <div class="poi-text">
+          <strong>Campo dei Mori</strong>
+          <em>Statues mystérieuses, Cannaregio</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p3)">23</div>
+        <div class="poi-text">
+          <strong>Fondaco dei Turchi / Mus. Nat.</strong>
+          <em>Dinosaures et squelettes de baleines</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p3)">24</div>
+        <div class="poi-text">
+          <strong>Arsenal (extérieur)</strong>
+          <em>Anciens chantiers navals — portes lions</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p3)">25</div>
+        <div class="poi-text">
+          <strong>Giardini della Biennale</strong>
+          <em>Parc calme en bord de lagune</em>
+        </div>
+      </div>
+      <div class="poi-item">
+        <div class="poi-num" style="background:var(--p3)">26</div>
+        <div class="poi-text">
+          <strong>Scuola di San Giorgio Schiavoni</strong>
+          <em>Carpaccio — cycles de Saint-Georges</em>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+
+  <!-- MAP -->
+  <div id="map-container">
+    <div id="map"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer">
+    <span>VENISE · MAI 2025 · Carte personnalisée</span>
+    <span>ASTUCE : Snapshots depuis les ponts · Vaporetto ligne 1 pour le Grand Canal · Évitez San Marco entre 10h et 16h</span>
+    <span>© OpenStreetMap contributors</span>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ─── Map init ───────────────────────────────────────────────
+const map = L.map('map', {
+  center: [45.4375, 12.3350],
+  zoom: 14.3,
+  zoomControl: false,
+  attributionControl: false
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// Attribution discrète
+L.control.attribution({ position: 'bottomright', prefix: '' })
+  .addAttribution('© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>')
+  .addTo(map);
+
+// ─── Marker factory ──────────────────────────────────────────
+function makeIcon(color, label, size = 24) {
+  const s = size;
+  const svg = `
+    <svg width="${s}" height="${s*1.3}" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 20 12 20S24 20.4 24 12C24 5.4 18.6 0 12 0z"
+            fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1.2"/>
+      <circle cx="12" cy="12" r="6" fill="rgba(255,255,255,0.25)"/>
+      <text x="12" y="16" text-anchor="middle" font-family="'Raleway',Arial,sans-serif"
+            font-size="${label.length > 2 ? 6 : 8}" font-weight="800" fill="white">${label}</text>
+    </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [s, s * 1.35],
+    iconAnchor: [s/2, s * 1.35],
+    popupAnchor: [0, -s]
+  });
+}
+
+function makeStarIcon(color, label) {
+  const svg = `
+    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="14,2 17,10 26,10 19,15 22,24 14,19 6,24 9,15 2,10 11,10"
+               fill="${color}" stroke="rgba(0,0,0,0.4)" stroke-width="1"/>
+      <text x="14" y="17" text-anchor="middle" font-family="Arial" font-size="7"
+            font-weight="800" fill="white">${label}</text>
+    </svg>`;
+  return L.divIcon({ html: svg, className: '', iconSize: [28,28], iconAnchor: [14,14], popupAnchor: [0,-14] });
+}
+
+// ─── Couleurs ────────────────────────────────────────────────
+const C = { p0: '#c0392b', p1: '#d35400', p2: '#b7860b', p3: '#27ae60', sp: '#6c3483', air: '#1a5276' };
+
+// ─── Données POI ────────────────────────────────────────────
+const pois = [
+  // P0
+  { n:1,  lat:45.4345, lng:12.3397, c:C.p0, label:'1',  name:'Basilique Saint-Marc',         desc:'Chefs-d\'œuvre byzantins, mosaïques d\'or — réservé le 8 mai', priority:'P0' },
+  { n:2,  lat:45.4337, lng:12.3403, c:C.p0, label:'2',  name:'Palais des Doges',             desc:'Symbole du pouvoir de la Sérénissime — réservé le 8 mai', priority:'P0' },
+  { n:3,  lat:45.4380, lng:12.3359, c:C.p0, label:'3',  name:'Pont du Rialto',               desc:'Cœur marchand de Venise depuis le XIII° siècle', priority:'P0' },
+  { n:4,  lat:45.4372, lng:12.3308, c:C.p0, label:'4',  name:'Grand Canal',                  desc:'Vue depuis les ponts Rialto et Accademia — prendre le vaporetto ligne 1', priority:'P0' },
+  { n:5,  lat:45.4341, lng:12.3388, c:C.p0, label:'5',  name:'Piazza San Marco',             desc:'"Le salon de l\'Europe" selon Napoléon', priority:'P0' },
+  // P1
+  { n:6,  lat:45.4307, lng:12.3352, c:C.p1, label:'6',  name:'Santa Maria della Salute',     desc:'Chef-d\'œuvre baroque — dôme iconique sur le Grand Canal', priority:'P1' },
+  { n:7,  lat:45.4312, lng:12.3281, c:C.p1, label:'7',  name:'Gallerie dell\'Accademia',     desc:'Bellini, Giorgione, Tintoret, Titien — la peinture vénitienne par excellence', priority:'P1' },
+  { n:8,  lat:45.4306, lng:12.3320, c:C.p1, label:'8',  name:'Collection Peggy Guggenheim', desc:'Art moderne sur le Grand Canal — Picasso, Dalí, Pollock', priority:'P1' },
+  { n:9,  lat:45.4368, lng:12.3237, c:C.p1, label:'9',  name:'Scuola Grande di San Rocco',  desc:'Tintoret intégral — "la Chapelle Sixtine vénitienne"', priority:'P1' },
+  { n:10, lat:45.4373, lng:12.3235, c:C.p1, label:'10', name:'Basilique dei Frari',          desc:'Titien, Bellini — gothique flamboyant de toute beauté', priority:'P1' },
+  { n:11, lat:45.4285, lng:12.3441, c:C.p1, label:'11', name:'San Giorgio Maggiore',         desc:'Palladio — clocher avec vue panoramique exceptionnelle sur Venise', priority:'P1' },
+  { n:12, lat:45.4381, lng:12.3230, c:C.p1, label:'12', name:'Campo Santa Margherita',       desc:'Le campo le plus vivant de Dorsoduro — bars, marché, étudiants', priority:'P1' },
+  // P2
+  { n:13, lat:45.4339, lng:12.3385, c:C.p2, label:'13', name:'Campanile San Marco',          desc:'Vue à 360° sur Venise et la lagune — éviter les heures de pointe', priority:'P2' },
+  { n:14, lat:45.4371, lng:12.3436, c:C.p2, label:'14', name:'Libreria Acqua Alta',          desc:'Librairie culte — livres dans une baignoire et un escalier de bouquins', priority:'P2' },
+  { n:15, lat:45.4385, lng:12.3350, c:C.p2, label:'15', name:'Mercato di Rialto',            desc:'Fruits de mer et légumes — y aller tôt le matin avant 9h', priority:'P2' },
+  { n:16, lat:45.4404, lng:12.3470, c:C.p2, label:'16', name:'Campo SS Giovanni e Paolo',   desc:'Grande basilique gothique + statue équestre Colleoni de Verrocchio', priority:'P2' },
+  { n:17, lat:45.4351, lng:12.3353, c:C.p2, label:'17', name:'Palazzo Contarini del Bovolo', desc:'Escalier en colimaçon caché dans une cour secrète — joyau méconnu', priority:'P2' },
+  { n:18, lat:45.4454, lng:12.3229, c:C.p2, label:'18', name:'Ghetto ebraico',              desc:'Plus vieux ghetto d\'Europe (1516) — synagogues et musée juif', priority:'P2' },
+  { n:19, lat:45.4316, lng:12.3300, c:C.p2, label:'19', name:'Ponte dell\'Accademia',       desc:'Vue imprenable sur le Grand Canal — superbe au coucher du soleil', priority:'P2' },
+  { n:20, lat:45.4340, lng:12.3430, c:C.p2, label:'20', name:'Chiesa di San Zaccaria',      desc:'Retable de Bellini, crypte inondée — Castello, à 2 min de St-Marc', priority:'P2' },
+  // P3
+  { n:21, lat:45.4395, lng:12.3286, c:C.p3, label:'21', name:'Campo San Polo',              desc:'2ème plus grand campo de Venise — ambiance locale authentique', priority:'P3' },
+  { n:22, lat:45.4456, lng:12.3286, c:C.p3, label:'22', name:'Campo dei Mori',              desc:'Statues de marchands maures mystérieuses — Cannaregio', priority:'P3' },
+  { n:23, lat:45.4414, lng:12.3259, c:C.p3, label:'23', name:'Fondaco dei Turchi',          desc:'Musée d\'Histoire Naturelle — dinosaures et squelettes de baleines', priority:'P3' },
+  { n:24, lat:45.4381, lng:12.3530, c:C.p3, label:'24', name:'Arsenal (extérieur)',         desc:'Anciens chantiers navals monumentaux — lions de marbre à l\'entrée', priority:'P3' },
+  { n:25, lat:45.4318, lng:12.3572, c:C.p3, label:'25', name:'Giardini della Biennale',    desc:'Parc calme en bord de lagune — pour souffler loin des foules', priority:'P3' },
+  { n:26, lat:45.4345, lng:12.3435, c:C.p3, label:'26', name:'Scuola San Giorgio Schiavoni', desc:'Carpaccio — petit trésor avec cycles de Saint-Georges', priority:'P3' },
+];
+
+// ─── Spéciaux ────────────────────────────────────────────────
+const specials = [
+  { lat:45.4453, lng:12.3283, label:'🏠', name:'Votre Airbnb',                   desc:'Calle Sbianchesini, Cannaregio', icon:'air' },
+  { lat:45.4338, lng:12.3411, label:'🔗', name:'Pont des Soupirs',              desc:'Réservé le 8 mai avec le Palais des Doges', icon:'sp' },
+  { lat:45.4366, lng:12.3375, label:'🎻', name:'Concert : Vivaldi – 4 Saisons', desc:'20h30 · Campo S. Salvador 4810 · 8 mai', icon:'sp' },
+];
+
+// ─── Ajout des POI ───────────────────────────────────────────
+pois.forEach(p => {
+  const icon = makeIcon(p.c, p.label);
+  const pColor = { P0: '#c0392b', P1: '#d35400', P2: '#b7860b', P3: '#27ae60' }[p.priority];
+  L.marker([p.lat, p.lng], { icon })
+    .addTo(map)
+    .bindPopup(`
+      <div style="font-family:'Raleway',sans-serif;min-width:160px">
+        <div style="background:${pColor};color:white;padding:3px 8px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.1em;margin-bottom:4px">${p.priority} — #${p.n}</div>
+        <strong style="font-size:12px;color:#1a120a">${p.name}</strong>
+        <p style="font-size:10px;color:#555;margin-top:3px;line-height:1.4">${p.desc}</p>
+      </div>`, { maxWidth: 220 });
+});
+
+// ─── Spéciaux ────────────────────────────────────────────────
+specials.forEach(s => {
+  const color = s.icon === 'air' ? C.air : C.sp;
+  const icon = makeStarIcon(color, '★');
+  L.marker([s.lat, s.lng], { icon })
+    .addTo(map)
+    .bindPopup(`
+      <div style="font-family:'Raleway',sans-serif;min-width:150px">
+        <div style="background:${color};color:white;padding:3px 8px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.1em;margin-bottom:4px">★ Réservation</div>
+        <strong style="font-size:12px">${s.name}</strong>
+        <p style="font-size:10px;color:#555;margin-top:3px">${s.desc}</p>
+      </div>`, { maxWidth: 200 });
+});
+
+// ─── Zone Airbnb ─────────────────────────────────────────────
+L.circle([45.4453, 12.3283], { radius: 80, color: C.air, fillColor: C.air, fillOpacity: 0.08, weight: 1.5, dashArray: '4,4' }).addTo(map);
+
+// ─── Resize map après rendu ──────────────────────────────────
+setTimeout(() => map.invalidateSize(), 300);
+</script>
+</body>
+</html>
