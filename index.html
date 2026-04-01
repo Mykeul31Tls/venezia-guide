@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Venezia · Guide Mai 2025</title>
+
+<!-- PWA / iOS Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Venezia"/>
+<meta name="theme-color" content="#6b2d0e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+/* ── Reset & base ───────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --terra:   #6b2d0e;
+  --terra2:  #8c3d18;
+  --gold:    #c9973a;
+  --gold-lt: #e4b86a;
+  --cream:   #fdf5e6;
+  --ink:     #1c1108;
+  --muted:   #7a6550;
+  --p0: #c0392b;
+  --p1: #d35400;
+  --p2: #b7860b;
+  --p3: #27ae60;
+  --sp: #6c3483;
+  --air: #1a5276;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+/* ── Layout ─────────────────────────────────── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bot);
+}
+
+/* ── Header ─────────────────────────────────── */
+#header {
+  flex-shrink: 0;
+  background: var(--terra);
+  padding: 10px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid var(--gold);
+  position: relative;
+  z-index: 1000;
+}
+
+#header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+#header h1 span {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--gold-lt);
+  font-size: 14px;
+}
+#header .sub {
+  font-size: 10px;
+  color: #c9a97a;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* GPS button */
+#btn-gps {
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid var(--gold);
+  border-radius: 10px;
+  padding: 7px 13px;
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+#btn-gps:active { background: rgba(255,255,255,0.22); }
+#btn-gps.active { background: var(--gold); color: var(--terra); border-color: var(--gold-lt); }
+
+.gps-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+#btn-gps.active .gps-dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.7); }
+}
+
+/* ── Map ────────────────────────────────────── */
+#map {
+  flex: 1;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Bottom panel ───────────────────────────── */
+#panel {
+  flex-shrink: 0;
+  background: var(--cream);
+  border-top: 2px solid var(--gold);
+  max-height: 42vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  z-index: 500;
+}
+#panel.open { transform: translateY(0); }
+
+#panel-handle {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px; height: 4px;
+  border-radius: 2px;
+  background: #ccc;
+}
+
+#panel-content {
+  padding: 22px 16px 16px;
+}
+
+#panel-close {
+  position: absolute;
+  top: 8px; right: 12px;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.poi-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: white;
+  margin-bottom: 6px;
+}
+
+#panel-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+
+#panel-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+#panel-tip {
+  background: #f5ede0;
+  border-left: 3px solid var(--gold);
+  padding: 7px 10px;
+  border-radius: 0 6px 6px 0;
+  font-size: 11.5px;
+  color: var(--terra);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ── Legend bottom bar ──────────────────────── */
+#legend-bar {
+  flex-shrink: 0;
+  background: var(--ink);
+  border-top: 1px solid #333;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: #aaa;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.leg-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* ── GPS accuracy circle override ──────────── */
+.leaflet-accuracy-circle {
+  stroke: #3b82f6 !important;
+  fill: #3b82f6 !important;
+}
+
+/* ── Toast notification ─────────────────────── */
+#toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(28,17,8,0.88);
+  color: var(--cream);
+  padding: 9px 18px;
+  border-radius: 20px;
+  font-size: 12px;
+  border: 1px solid var(--gold);
+  opacity: 0;
+  transition: opacity .3s, transform .3s;
+  pointer-events: none;
+  z-index: 2000;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Leaflet overrides */
+.leaflet-control-attribution { font-size: 8px !important; }
+.leaflet-popup-content-wrapper {
+  border-radius: 10px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25) !important;
+}
+.leaflet-popup-content { margin: 12px 14px !important; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div>
+      <h1>VENEZIA <span>· La Serenissima</span></h1>
+      <div class="sub">Guide · 7–11 mai 2025</div>
+    </div>
+    <button id="btn-gps" onclick="toggleGPS()">
+      <div class="gps-dot"></div>
+      <span id="gps-label">GPS</span>
+    </button>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- LEGEND BAR -->
+  <div id="legend-bar">
+    <div class="leg-item"><div class="leg-dot" style="background:#c0392b"></div>P0 Incontournable</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#d35400"></div>P1 Hautement rec.</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#b7860b"></div>P2 Très intéressant</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#27ae60"></div>P3 Si vous passez</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#6c3483;border-radius:2px"></div>★ Réservé</div>
+  </div>
+
+  <!-- POI DETAIL PANEL -->
+  <div id="panel">
+    <div id="panel-handle"></div>
+    <div id="panel-close" onclick="closePanel()">✕</div>
+    <div id="panel-content">
+      <div id="panel-badge" class="poi-badge"></div>
+      <div id="panel-title"></div>
+      <div id="panel-desc"></div>
+      <div id="panel-tip"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ─── Map ─────────────────────────────────────────────────────
+const map = L.map('map', {
+  center: [45.4375, 12.3350],
+  zoom: 15,
+  zoomControl: false,
+  attributionControl: true,
+  tap: true
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// Zoom control haut-droite
+L.control.zoom({ position: 'topright' }).addTo(map);
+
+// ─── Marker SVG factory ──────────────────────────────────────
+function svgIcon(color, label, size = 30) {
+  const fs = label.length > 2 ? 7 : (label.length > 1 ? 8 : 10);
+  const html = `<svg width="${size}" height="${Math.round(size*1.35)}" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/></filter>
+    <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 25 15 25S30 25.5 30 15C30 6.7 23.3 0 15 0z"
+          fill="${color}" stroke="rgba(0,0,0,0.28)" stroke-width="1.2" filter="url(#sh)"/>
+    <circle cx="15" cy="15" r="8" fill="rgba(255,255,255,0.22)"/>
+    <text x="15" y="19.5" text-anchor="middle" dominant-baseline="auto"
+          font-family="'DM Sans',Arial,sans-serif" font-size="${fs}" font-weight="800" fill="white"
+          style="text-shadow:0 0 3px rgba(0,0,0,0.5)">${label}</text>
+  </svg>`;
+  return L.divIcon({
+    html, className: '',
+    iconSize: [size, Math.round(size*1.35)],
+    iconAnchor: [size/2, Math.round(size*1.35)],
+    popupAnchor: [0, -Math.round(size*1.35)]
+  });
+}
+
+function starIcon(color) {
+  const html = `<svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+    <filter id="sh2"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.4"/></filter>
+    <polygon points="15,2 19,11 29,11 21,17 24,27 15,21 6,27 9,17 1,11 11,11"
+             fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="1" filter="url(#sh2)"/>
+    <text x="15" y="19" text-anchor="middle" font-family="Arial" font-size="9"
+          font-weight="900" fill="white">★</text>
+  </svg>`;
+  return L.divIcon({ html, className: '', iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-15] });
+}
+
+// ─── Couleurs ────────────────────────────────────────────────
+const C = { p0:'#c0392b', p1:'#d35400', p2:'#b7860b', p3:'#27ae60', sp:'#6c3483', air:'#1a5276' };
+
+const PRIORITY_LABELS = { p0:'P0 — Incontournable', p1:'P1 — Hautement recommandé', p2:'P2 — Très intéressant', p3:'P3 — Si vous passez', sp:'★ Réservation', air:'🏠 Votre Airbnb' };
+
+// ─── POI data ────────────────────────────────────────────────
+const POIS = [
+  // P0
+  { id:1,  lat:45.4345, lng:12.3397, prio:'p0', label:'1',  name:'Basilique Saint-Marc',          desc:'Joyau de l\'architecture byzantine, couverte de mosaïques d\'or de toute beauté.',
+    tip:'Réservé le 8 mai — arrivez 5 min avant pour un accès sans queue. Ne manquez pas les terrasses supérieures !' },
+  { id:2,  lat:45.4337, lng:12.3403, prio:'p0', label:'2',  name:'Palais des Doges',             desc:'Siège du pouvoir millénaire de la République de Venise, chef-d\'œuvre gothique.',
+    tip:'Réservé le 8 mai. La salle du Grand Conseil et la Bocca del Leone sont saisissantes.' },
+  { id:3,  lat:45.4380, lng:12.3359, prio:'p0', label:'3',  name:'Pont du Rialto',               desc:'Le plus ancien pont sur le Grand Canal, cœur commercial de Venise depuis le XIII° siècle.',
+    tip:'Photo immanquable depuis les rives à l\'aube — sans foule et lumière dorée.' },
+  { id:4,  lat:45.4349, lng:12.3274, prio:'p0', label:'4',  name:'Grand Canal (vaporetto L.1)',  desc:'La plus belle avenue du monde — 4 km de palais gothiques, baroques et Renaissance.',
+    tip:'Prenez le vaporetto ligne 1 (lent) dans les 2 sens. Montez à l\'avant pour la vue.' },
+  { id:5,  lat:45.4341, lng:12.3388, prio:'p0', label:'5',  name:'Piazza San Marco',             desc:'"Le salon de l\'Europe" selon Napoléon — entourée des Procuraties et du Campanile.',
+    tip:'Évitez 10h–16h en haute saison. Idéale tôt le matin ou après 19h, à la lumière dorée.' },
+  // P1
+  { id:6,  lat:45.4307, lng:12.3352, prio:'p1', label:'6',  name:'Santa Maria della Salute',     desc:'Œuvre baroque de Longhena (1631) érigée en remerciement pour la fin de la peste.',
+    tip:'Vue depuis l\'Accademia ou Dorsoduro au coucher du soleil : absolument magique.' },
+  { id:7,  lat:45.4312, lng:12.3281, prio:'p1', label:'7',  name:'Gallerie dell\'Accademia',     desc:'La collection de peinture vénitienne la plus importante au monde. Bellini, Titien, Tintoret.',
+    tip:'Comptez minimum 2h. Réservez en ligne pour éviter les files. Entrée tardive le vendredi.' },
+  { id:8,  lat:45.4306, lng:12.3320, prio:'p1', label:'8',  name:'Collection Peggy Guggenheim',  desc:'Art moderne et surréalisme sur le Grand Canal — Picasso, Dalí, Pollock, Mondrian.',
+    tip:'Ouvert du mer. au lun. — fermé le mardi. Le jardin de sculptures est inclus.' },
+  { id:9,  lat:45.4368, lng:12.3237, prio:'p1', label:'9',  name:'Scuola Grande di San Rocco',   desc:'50 toiles de Tintoret intégrées à l\'architecture — la "Chapelle Sixtine vénitienne".',
+    tip:'Prenez les miroirs inclinés fournis à l\'entrée pour admirer les plafonds sans se fatiguer.' },
+  { id:10, lat:45.4373, lng:12.3235, prio:'p1', label:'10', name:'Basilique dei Frari',          desc:'Gothique flamboyant avec l\'Assomption de Titien et le retable de Bellini.',
+    tip:'Arrivée autour de 9h — avant les groupes. Le mausolée de Titien est impressionnant.' },
+  { id:11, lat:45.4285, lng:12.3441, prio:'p1', label:'11', name:'San Giorgio Maggiore',         desc:'Église palladienne sur son île — clocher avec vue panoramique exceptionnelle.',
+    tip:'Traversée en vaporetto L.2 (2 min) depuis Riva degli Schiavoni. Vue à 360° du clocher !' },
+  { id:12, lat:45.4381, lng:12.3230, prio:'p1', label:'12', name:'Campo Santa Margherita',       desc:'Le campo le plus vivant de Dorsoduro — marché, bars, étudiants, vraie vie vénitienne.',
+    tip:'Idéal pour l\'apéro du soir (spritz !). Le marché tôt le matin est délicieux.' },
+  // P2
+  { id:13, lat:45.4339, lng:12.3385, prio:'p2', label:'13', name:'Campanile San Marco',          desc:'99 mètres — vue à 360° sur Venise, les îles et les Dolomites par temps clair.',
+    tip:'File rapide tôt le matin ou en fin d\'après-midi. Billet séparé de la Basilique.' },
+  { id:14, lat:45.4371, lng:12.3436, prio:'p2', label:'14', name:'Libreria Acqua Alta',          desc:'Librairie culte de Castello — livres dans des gondoles et baignoires, escalier de bouquins.',
+    tip:'Gratuit. Cherchez le "livre d\'or" caché et sortez par derrière sur le canal.' },
+  { id:15, lat:45.4385, lng:12.3350, prio:'p2', label:'15', name:'Mercato di Rialto',            desc:'Le marché aux poissons et fruits & légumes de Venise depuis le XIV° siècle.',
+    tip:'À visiter impérativement avant 9h. Fermé dimanche et lundi. Odeur et couleurs inoubliables.' },
+  { id:16, lat:45.4404, lng:12.3470, prio:'p2', label:'16', name:'Campo SS Giovanni e Paolo',   desc:'Immense basilique gothique + statue équestre de Colleoni par Verrocchio — chef-d\'œuvre.',
+    tip:'Un des campi les plus authentiques. Bon endroit pour le déjeuner en terrasse.' },
+  { id:17, lat:45.4351, lng:12.3353, prio:'p2', label:'17', name:'Palazzo Contarini del Bovolo', desc:'Escalier en colimaçon gothique-Renaissance caché dans une cour secrète — joyau méconnu.',
+    tip:'À 3 min de Rialto. Peu connu des touristes. Cherchez la petite pancarte "Scala Contarini".' },
+  { id:18, lat:45.4454, lng:12.3229, prio:'p2', label:'18', name:'Ghetto ebraico',              desc:'Plus vieux ghetto du monde (1516). Synagogues superposées, musée juif, atmosphère unique.',
+    tip:'Visites guidées des synagogues les demi-heures. Quartier calme et très authentique.' },
+  { id:19, lat:45.4316, lng:12.3300, prio:'p2', label:'19', name:'Ponte dell\'Accademia',       desc:'Vue iconique sur le Grand Canal vers la Salute — le pont des amoureux de Venise.',
+    tip:'Coucher de soleil ici = photo de voyage de votre vie. Arrivez 30 min avant.' },
+  { id:20, lat:45.4340, lng:12.3430, prio:'p2', label:'20', name:'Chiesa di San Zaccaria',      desc:'Retable de Giovanni Bellini, crypte partiellement inondée — à 2 min de la Piazza.',
+    tip:'Peu bondée par rapport à San Marco. La crypte inondée est une expérience unique.' },
+  // P3
+  { id:21, lat:45.4395, lng:12.3286, prio:'p3', label:'21', name:'Campo San Polo',              desc:'Le 2ème plus grand campo de Venise — cinéma en plein air l\'été, ambiance locale.',
+    tip:'Bon point de passage entre Rialto et les Frari. Quelques bons cafés.' },
+  { id:22, lat:45.4456, lng:12.3286, prio:'p3', label:'22', name:'Campo dei Mori',              desc:'Quatre statues de marchands maures en pierre — mystérieuses et photogéniques, Cannaregio.',
+    tip:'Proche de votre Airbnb ! Tintoret a habité juste à côté (plaque commémorative).' },
+  { id:23, lat:45.4414, lng:12.3259, prio:'p3', label:'23', name:'Fondaco dei Turchi / Mus. Nat.', desc:'Musée d\'Histoire Naturelle dans un palais byzantin — squelettes de baleines et dinosaures.',
+    tip:'Idéal avec des enfants mais intéressant pour tous. Terrasse avec vue sur le Grand Canal.' },
+  { id:24, lat:45.4381, lng:12.3530, prio:'p3', label:'24', name:'Arsenal (extérieur)',         desc:'Les mythiques chantiers navals qui ont fait la puissance de Venise — lions de marbre.',
+    tip:'L\'intérieur est rarement ouvert, mais les lions et portails valent le détour.' },
+  { id:25, lat:45.4318, lng:12.3572, prio:'p3', label:'25', name:'Giardini della Biennale',    desc:'Grand parc calme en bord de lagune — pour souffler loin des foules touristiques.',
+    tip:'Parfait pour une pause pique-nique avec vue sur la lagune et San Giorgio.' },
+  { id:26, lat:45.4345, lng:12.3435, prio:'p3', label:'26', name:'Scuola San Giorgio Schiavoni', desc:'Minuscule trésor avec le cycle complet de Carpaccio sur Saint-Georges — souvent oublié.',
+    tip:'Très peu connu, jamais bondé. L\'un des plus beaux Carpaccio accessibles de Venise.' },
+];
+
+// Réservations / Spéciaux
+const SPECIALS = [
+  { lat:45.4453, lng:12.3283, prio:'air', label:'🏠', name:'Votre Airbnb',
+    desc:'Calle Sbianchesini, Cannaregio — votre base pour 4 nuits.',
+    tip:'Quartier calme et authentique. À 15 min à pied de San Marco.' },
+  { lat:45.4338, lng:12.3411, prio:'sp', label:'🔗', name:'Pont des Soupirs',
+    desc:'Passage secret reliant le Palais des Doges à la prison — réservé le 8 mai.',
+    tip:'Inclus dans votre visite Palais des Doges à 10h. Lord Byron l\'a immortalisé.' },
+  { lat:45.4366, lng:12.3375, prio:'sp', label:'🎻', name:'Concert · Vivaldi – Les 4 Saisons',
+    desc:'Campo S. Salvador 4810 · 20h30 · 8 mai 2025. Ne soyez pas en retard !',
+    tip:'Tenue correcte souhaitée. Arrivez 15 min avant pour vous installer confortablement.' },
+];
+
+// ─── Place markers on map ────────────────────────────────────
+POIS.forEach(p => {
+  const color = C[p.prio];
+  const marker = L.marker([p.lat, p.lng], { icon: svgIcon(color, p.label) }).addTo(map);
+  marker.on('click', () => openPanel(p, color));
+});
+
+SPECIALS.forEach(s => {
+  const color = s.prio === 'air' ? C.air : C.sp;
+  const marker = L.marker([s.lat, s.lng], { icon: starIcon(color) }).addTo(map);
+  marker.on('click', () => openPanel(s, color, true));
+});
+
+// ─── Panel ───────────────────────────────────────────────────
+function openPanel(poi, color, isStar = false) {
+  const prio = poi.prio;
+  document.getElementById('panel-badge').textContent = PRIORITY_LABELS[prio] || prio.toUpperCase();
+  document.getElementById('panel-badge').style.background = color;
+  document.getElementById('panel-title').textContent = poi.name;
+  document.getElementById('panel-desc').textContent = poi.desc;
+  document.getElementById('panel-tip').textContent = '💡 ' + poi.tip;
+  document.getElementById('panel').classList.add('open');
+  map.panTo([poi.lat, poi.lng], { animate: true, duration: 0.4 });
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+}
+
+// Fermer en cliquant sur la carte
+map.on('click', () => closePanel());
+
+// ─── GPS / Géolocalisation ───────────────────────────────────
+let watchId = null;
+let gpsActive = false;
+let gpsMarker = null;
+let gpsCircle = null;
+let gpsFollowing = false;
+
+function toggleGPS() {
+  if (!gpsActive) { startGPS(); } else { stopGPS(); }
+}
+
+function startGPS() {
+  if (!navigator.geolocation) {
+    showToast('Géolocalisation non disponible sur cet appareil');
+    return;
+  }
+  gpsActive = true;
+  gpsFollowing = true;
+  document.getElementById('btn-gps').classList.add('active');
+  document.getElementById('gps-label').textContent = 'Suivi ON';
+  showToast('Recherche de votre position…');
+
+  watchId = navigator.geolocation.watchPosition(
+    pos => onGPSSuccess(pos),
+    err => onGPSError(err),
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 3000 }
+  );
+}
+
+function stopGPS() {
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  gpsActive = false;
+  gpsFollowing = false;
+  document.getElementById('btn-gps').classList.remove('active');
+  document.getElementById('gps-label').textContent = 'GPS';
+  if (gpsMarker) { map.removeLayer(gpsMarker); gpsMarker = null; }
+  if (gpsCircle) { map.removeLayer(gpsCircle); gpsCircle = null; }
+  showToast('GPS désactivé');
+}
+
+function onGPSSuccess(pos) {
+  const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+
+  // Marqueur position
+  const gpsSvg = `<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="11" cy="11" r="10" fill="#2563eb" stroke="white" stroke-width="2.5" opacity="0.9"/>
+    <circle cx="11" cy="11" r="4" fill="white"/>
+  </svg>`;
+  const gpsIcon = L.divIcon({ html: gpsSvg, className: '', iconSize:[22,22], iconAnchor:[11,11] });
+
+  if (!gpsMarker) {
+    gpsMarker = L.marker([lat, lng], { icon: gpsIcon, zIndexOffset: 1000 }).addTo(map);
+    gpsMarker.bindTooltip('Vous êtes ici', { permanent: false, direction: 'top', offset:[0,-12] });
+    gpsCircle = L.circle([lat, lng], { radius: accuracy, color:'#2563eb', fillColor:'#3b82f6', fillOpacity: 0.08, weight: 1.5 }).addTo(map);
+    showToast(`Position trouvée · précision ~${Math.round(accuracy)} m`);
+  } else {
+    gpsMarker.setLatLng([lat, lng]);
+    gpsCircle.setLatLng([lat, lng]);
+    gpsCircle.setRadius(accuracy);
+  }
+
+  if (gpsFollowing) {
+    map.setView([lat, lng], Math.max(map.getZoom(), 16), { animate: true });
+    gpsFollowing = false; // centrer une seule fois puis laisser libre
+  }
+}
+
+function onGPSError(err) {
+  stopGPS();
+  const msgs = {
+    1: 'Accès à la position refusé — autorisez la localisation dans les réglages Safari',
+    2: 'Position indisponible — vérifiez votre connexion',
+    3: 'Délai dépassé — réessayez dans une zone dégagée'
+  };
+  showToast(msgs[err.code] || 'Erreur GPS');
+}
+
+// ─── Toast ───────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ─── Resize fix ──────────────────────────────────────────────
+setTimeout(() => map.invalidateSize(), 200);
+window.addEventListener('resize', () => map.invalidateSize());
+</script>
+</body>
+</html>
