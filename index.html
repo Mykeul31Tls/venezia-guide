@@ -18,7 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 
 <style>
-/* ── Reset & base ───────────────────────────── */
+/*  Reset & base  */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -50,7 +50,7 @@ html, body {
   touch-action: manipulation;
 }
 
-/* ── Layout ─────────────────────────────────── */
+/*  Layout  */
 #app {
   display: flex;
   flex-direction: column;
@@ -59,7 +59,7 @@ html, body {
   padding-bottom: var(--safe-bot);
 }
 
-/* ── Header ─────────────────────────────────── */
+/*  Header  */
 #header {
   flex-shrink: 0;
   background: var(--terra);
@@ -129,7 +129,7 @@ html, body {
   50%       { opacity: 0.5; transform: scale(0.7); }
 }
 
-/* ── Map ────────────────────────────────────── */
+/*  Map  */
 #map {
   flex: 1;
   width: 100%;
@@ -137,7 +137,7 @@ html, body {
   z-index: 1;
 }
 
-/* ── Bottom panel ───────────────────────────── */
+/*  Bottom panel  */
 #panel {
   flex-shrink: 0;
   background: var(--cream);
@@ -214,7 +214,7 @@ html, body {
   line-height: 1.5;
 }
 
-/* ── Legend bottom bar ──────────────────────── */
+/*  Legend bottom bar  */
 #legend-bar {
   flex-shrink: 0;
   background: var(--ink);
@@ -224,6 +224,19 @@ html, body {
   align-items: center;
   justify-content: space-around;
   gap: 4px;
+}
+
+#copyright-bar {
+  flex-shrink: 0;
+  background: #0d0a06;
+  border-top: 1px solid var(--gold);
+  padding: 4px 10px;
+  text-align: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: #7a6040;
 }
 
 .leg-item {
@@ -243,13 +256,13 @@ html, body {
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-/* ── GPS accuracy circle override ──────────── */
+/*  GPS accuracy circle override  */
 .leaflet-accuracy-circle {
   stroke: #3b82f6 !important;
   fill: #3b82f6 !important;
 }
 
-/* ── Toast notification ─────────────────────── */
+/*  Toast notification  */
 #toast {
   position: fixed;
   bottom: 90px;
@@ -307,14 +320,19 @@ html, body {
     <div class="leg-item"><div class="leg-dot" style="background:#d35400"></div>P1 Hautement rec.</div>
     <div class="leg-item"><div class="leg-dot" style="background:#b7860b"></div>P2 Très intéressant</div>
     <div class="leg-item"><div class="leg-dot" style="background:#27ae60"></div>P3 Si vous passez</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#6c3483;border-radius:2px"></div>★ Réservé</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#1abc9c;border-radius:2px;transform:rotate(45deg)"></div>✦ Insolite</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#6c3483;border-radius:2px"></div>* Réservé</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#1abc9c;border-radius:2px;transform:rotate(45deg)"></div>S - Insolite</div>
+  </div>
+
+  <!-- COPYRIGHT -->
+  <div id="copyright-bar">
+    Venezia@2026 - Copyright &copy; 2026 MBO | Mind Bolt Objects
   </div>
 
   <!-- POI DETAIL PANEL -->
   <div id="panel">
     <div id="panel-handle"></div>
-    <div id="panel-close" onclick="closePanel()">✕</div>
+    <div id="panel-close" onclick="closePanel()">X</div>
     <div id="panel-content">
       <div id="panel-badge" class="poi-badge"></div>
       <div id="panel-title"></div>
@@ -330,7 +348,7 @@ html, body {
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ─── Map ─────────────────────────────────────────────────────
+//  Map 
 const map = L.map('map', {
   center: [45.4375, 12.3350],
   zoom: 15,
@@ -347,7 +365,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 // Zoom control haut-droite
 L.control.zoom({ position: 'topright' }).addTo(map);
 
-// ─── Marker SVG factory ──────────────────────────────────────
+//  Marker SVG factory 
 function svgIcon(color, label, size = 30) {
   const fs = label.length > 2 ? 7 : (label.length > 1 ? 8 : 10);
   const html = `<svg width="${size}" height="${Math.round(size*1.35)}" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
@@ -373,15 +391,15 @@ function starIcon(color) {
     <polygon points="15,2 19,11 29,11 21,17 24,27 15,21 6,27 9,17 1,11 11,11"
              fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="1" filter="url(#sh2)"/>
     <text x="15" y="19" text-anchor="middle" font-family="Arial" font-size="9"
-          font-weight="900" fill="white">★</text>
+          font-weight="900" fill="white">*</text>
   </svg>`;
   return L.divIcon({ html, className: '', iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-15] });
 }
 
-// ─── Couleurs ────────────────────────────────────────────────
+//  Couleurs 
 const C = { p0:'#c0392b', p1:'#d35400', p2:'#b7860b', p3:'#27ae60', sp:'#6c3483', air:'#1a5276', special:'#1abc9c' };
 
-const PRIORITY_LABELS = { p0:'P0 — Incontournable', p1:'P1 — Hautement recommandé', p2:'P2 — Très intéressant', p3:'P3 — Si vous passez', sp:'★ Réservation', air:'🏠 Votre Airbnb', special:'✦ Lieu insolite & inattendu' };
+const PRIORITY_LABELS = { p0:'P0 — Incontournable', p1:'P1 — Hautement recommandé', p2:'P2 — Très intéressant', p3:'P3 — Si vous passez', sp:'* Réservation', air:'LOG Votre Airbnb', special:'S Lieu insolite & inattendu' };
 
 function diamondIcon(color) {
   const html = `<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
@@ -389,12 +407,12 @@ function diamondIcon(color) {
     <rect x="4" y="4" width="20" height="20" rx="2" transform="rotate(45 14 14)"
           fill="${color}" stroke="rgba(0,0,0,0.3)" stroke-width="1" filter="url(#sh3)"/>
     <text x="14" y="18" text-anchor="middle" font-family="Arial" font-size="10"
-          font-weight="900" fill="white">✦</text>
+          font-weight="900" fill="white">S</text>
   </svg>`;
   return L.divIcon({ html, className: '', iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-14] });
 }
 
-// ─── POI data ────────────────────────────────────────────────
+//  POI data 
 const POIS = [
   // P0
   { id:1,  lat:45.4345, lng:12.3397, prio:'p0', label:'1',  name:'Basilique Saint-Marc',          desc:'Joyau de l\'architecture byzantine, couverte de mosaïques d\'or de toute beauté.',
@@ -497,15 +515,15 @@ const POIS = [
     tip:'Parfait pour se poser quelques minutes et chercher des détails architecturaux sur les façades.' },
   { id:48, lat:45.4438, lng:12.3280, prio:'p3', label:'48', name:'Calle dei Forneri', desc:'Ruelle commerçante modeste de Cannaregio, avec boulangeries, cafés et petits commerces de quartier.',
     tip:'Idéal pour une pause-déjeuner rapide avant de repartir en balade, à proximité de votre Airbnb.' },
-  { id:49, lat:45.4410, lng:12.3315, prio:'special', label:'✦', name:'Bacari zona San Giacomo de l\'Orio', desc:'Ensemble de petits bacari de quartier autour de San Giacomo de l\'Orio, très prisés des habitants le soir.',
+  { id:49, lat:45.4410, lng:12.3315, prio:'special', label:'S', name:'Bacari zona San Giacomo de l\'Orio', desc:'Ensemble de petits bacari de quartier autour de San Giacomo de l\'Orio, très prisés des habitants le soir.',
     tip:'Restez dans cette zone pour l\'apéritif, en testant les différentes petites terrasses, surtout en fin de journée.' },
-  { id:50, lat:45.4412, lng:12.3313, prio:'special', label:'✦', name:'Calle dei Barnabotti – Cannaregio', desc:'Petite ruelle discrète de Cannaregio, avec de belles maisons anciennes et une ambiance résidentielle authentique.',
+  { id:50, lat:45.4412, lng:12.3313, prio:'special', label:'S', name:'Calle dei Barnabotti – Cannaregio', desc:'Petite ruelle discrète de Cannaregio, avec de belles maisons anciennes et une ambiance résidentielle authentique.',
     tip:'Profitez-en pour prendre quelques photos de détails architecturaux, à l\'écart des flux touristiques.' },
-  { id:51, lat:45.4420, lng:12.3315, prio:'special', label:'✦', name:'Calle de la Testa – Cannaregio', desc:'Ruelle très courte mais symbolique, avec une enseigne de bacaro historique et ambiance très locale.',
+  { id:51, lat:45.4420, lng:12.3315, prio:'special', label:'S', name:'Calle de la Testa – Cannaregio', desc:'Ruelle très courte mais symbolique, avec une enseigne de bacaro historique et ambiance très locale.',
     tip:'Stop impressionnant pour boire un verre dans un cadre très authentique, même si le lieu est petit et très fréquenté.' },
-  { id:52, lat:45.4425, lng:12.3318, prio:'special', label:'✦', name:'Calle Nova del Pozzo – Dorsoduro', desc:'Ruelle étroite et très pittoresque de Dorsoduro, avec boutiques et petites terrasses, peu fréquentée.',
+  { id:52, lat:45.4425, lng:12.3318, prio:'special', label:'S', name:'Calle Nova del Pozzo – Dorsoduro', desc:'Ruelle étroite et très pittoresque de Dorsoduro, avec boutiques et petites terrasses, peu fréquentée.',
     tip:'Parfait pour une pause-photo à l\'heure de la lumière basse, juste avant le coucher du soleil.' },
-  // ── MURANO ──────────────────────────────────────────────────
+  //  MURANO 
   { id:53, lat:45.45949, lng:12.35318, prio:'p0', label:'53', name:'Basilica di Santa Maria e San Donato', desc:'La grande église de Murano, célèbre pour son sol en mosaïque et son atmosphère très ancienne.',
     tip:'Entrez si elle est ouverte : la mosaïque au sol vaut vraiment le détour, surtout avec peu de monde.' },
   { id:54, lat:45.45695, lng:12.35480, prio:'p1', label:'54', name:'Murano Faro', desc:'Le phare de Murano, repère visuel fort à l\'entrée de l\'île — excellent point photo sur les canaux.',
@@ -518,11 +536,11 @@ const POIS = [
     tip:'Passez devant pendant la balade vers le nord de l\'île, sans détour important.' },
   { id:58, lat:45.45810, lng:12.35830, prio:'p2', label:'58', name:'Fondamenta dei Vetrai', desc:'La grande promenade vitrée de Murano, bordée d\'ateliers et boutiques — rue emblématique de l\'île.',
     tip:'Idéal pour alterner vitrines, démonstrations et photos de canaux.' },
-  { id:59, lat:45.45680, lng:12.35400, prio:'special', label:'✦', name:'Atelier de soufflage visible', desc:'Plusieurs ateliers de Murano permettent d\'apercevoir le soufflage du verre en direct.',
+  { id:59, lat:45.45680, lng:12.35400, prio:'special', label:'S', name:'Atelier de soufflage visible', desc:'Plusieurs ateliers de Murano permettent d\'apercevoir le soufflage du verre en direct.',
     tip:'Regardez si une démonstration est annoncée avant d\'entrer, et privilégiez les ateliers avec artisans visibles.' },
-  { id:60, lat:45.45655, lng:12.35570, prio:'special', label:'✦', name:'Vue sur les fours et canaux de Murano', desc:'Les ateliers et canaux donnent un décor industriel raffiné unique à Venise.',
+  { id:60, lat:45.45655, lng:12.35570, prio:'special', label:'S', name:'Vue sur les fours et canaux de Murano', desc:'Les ateliers et canaux donnent un décor industriel raffiné unique à Venise.',
     tip:'Faites cette portion après le musée pour mieux reconnaître les gestes et le vocabulaire du verre.' },
-  // ── BURANO ──────────────────────────────────────────────────
+  //  BURANO 
   { id:61, lat:45.48495, lng:12.41875, prio:'p0', label:'61', name:'Piazza Baldassarre Galuppi', desc:'Le cœur de Burano, avec ses maisons colorées, ses cafés et son atmosphère de village.',
     tip:'Arrivez quand la lumière est encore douce pour éviter le plein de foule au centre.' },
   { id:62, lat:45.48572, lng:12.41816, prio:'p1', label:'62', name:'Casa di Bepi Suà', desc:'Maison iconique et très photogénique, célèbre pour ses couleurs vives et son décor quasi ludique.',
@@ -537,32 +555,32 @@ const POIS = [
     tip:'Bonne étape de transition entre la place Galuppi et les ruelles vers le nord.' },
   { id:67, lat:45.48540, lng:12.41980, prio:'p3', label:'67', name:'Ponts des petites calli', desc:'Les petits ponts de Burano donnent des vues très graphiques sur les canaux étroits.',
     tip:'Arrêtez-vous sur chaque pont sans vous presser : la symétrie des canaux fonctionne très bien en photo.' },
-  { id:68, lat:45.48640, lng:12.42095, prio:'special', label:'✦', name:'Le Burano sans foule', desc:'Les ruelles secondaires derrière la place principale offrent un Burano plus intime et vivant.',
+  { id:68, lat:45.48640, lng:12.42095, prio:'special', label:'S', name:'Le Burano sans foule', desc:'Les ruelles secondaires derrière la place principale offrent un Burano plus intime et vivant.',
     tip:'Quittez volontairement l\'axe principal et faites une boucle en bord de canal, surtout en fin d\'après-midi.' },
-  { id:69, lat:45.48470, lng:12.41895, prio:'special', label:'✦', name:'Rive des couleurs de Burano', desc:'Les façades alignées autour du centre offrent l\'image la plus célèbre de l\'île.',
+  { id:69, lat:45.48470, lng:12.41895, prio:'special', label:'S', name:'Rive des couleurs de Burano', desc:'Les façades alignées autour du centre offrent l\'image la plus célèbre de l\'île.',
     tip:'Cherchez la lumière rasante du matin ou de fin d\'après-midi pour des couleurs plus profondes.' },
 ];
 
 // Réservations / Spéciaux
 const SPECIALS = [
-  { lat:45.43734, lng:12.33294, prio:'air', label:'🏠', name:'Votre Airbnb',
+  { lat:45.43734, lng:12.33294, prio:'air', label:'LOG', name:'Votre Airbnb',
     desc:'Calle dei Sbianchesini, San Polo — à 300 m du pont du Rialto.',
     tip:'Position idéale : Rialto à 5 min, San Marco à 10 min, les Frari à 7 min à pied.' },
-  { lat:45.4338, lng:12.3411, prio:'sp', label:'🔗', name:'Pont des Soupirs',
+  { lat:45.4338, lng:12.3411, prio:'sp', label:'SOU', name:'Pont des Soupirs',
     desc:'Passage secret reliant le Palais des Doges à la prison — réservé le 8 mai.',
     tip:'Inclus dans votre visite Palais des Doges à 10h. Lord Byron l\'a immortalisé.' },
-  { lat:45.4366, lng:12.3375, prio:'sp', label:'🎻', name:'Concert · Vivaldi – Les 4 Saisons',
+  { lat:45.4366, lng:12.3375, prio:'sp', label:'VIV', name:'Concert · Vivaldi – Les 4 Saisons',
     desc:'Campo S. Salvador 4810 · 20h30 · 8 mai 2026. Ne soyez pas en retard !',
     tip:'Tenue correcte souhaitée. Arrivez 15 min avant pour vous installer confortablement.' },
-  { lat:45.4334, lng:12.3346, prio:'sp', label:'🎭', name:'Visite Teatro La Fenice',
+  { lat:45.4334, lng:12.3346, prio:'sp', label:'FEN', name:'Visite Teatro La Fenice',
     desc:'Le plus célèbre opéra de Venise — visite guidée le 10 mai de 9h30 à 13h00.',
     tip:'Arrivez quelques minutes avant 9h30. La salle et son histoire (incendie 1996) sont saisissantes.' },
-  { lat:45.4376, lng:12.3225, prio:'sp', label:'🍽', name:'Garden Bistrot – Dîner',
+  { lat:45.4376, lng:12.3225, prio:'sp', label:'DIN', name:'Garden Bistrot – Dîner',
     desc:'Campo Santa Margherita 2919 · Réservation le 10 mai à 20h30.',
     tip:'Sur le campo le plus vivant de Dorsoduro. Prévoyez d\'arriver depuis l\'Accademia (5 min à pied).' },
 ];
 
-// ─── Place markers on map ────────────────────────────────────
+//  Place markers on map 
 POIS.forEach(p => {
   const color = C[p.prio];
   const icon = p.prio === 'special' ? diamondIcon(color) : svgIcon(color, p.label);
@@ -576,14 +594,14 @@ SPECIALS.forEach(s => {
   marker.on('click', () => openPanel(s, color, true));
 });
 
-// ─── Panel ───────────────────────────────────────────────────
+//  Panel 
 function openPanel(poi, color, isStar = false) {
   const prio = poi.prio;
   document.getElementById('panel-badge').textContent = PRIORITY_LABELS[prio] || prio.toUpperCase();
   document.getElementById('panel-badge').style.background = color;
   document.getElementById('panel-title').textContent = poi.name;
   document.getElementById('panel-desc').textContent = poi.desc;
-  document.getElementById('panel-tip').textContent = '💡 ' + poi.tip;
+  document.getElementById('panel-tip').textContent = '! ' + poi.tip;
   document.getElementById('panel').classList.add('open');
   map.panTo([poi.lat, poi.lng], { animate: true, duration: 0.4 });
 }
@@ -595,7 +613,7 @@ function closePanel() {
 // Fermer en cliquant sur la carte
 map.on('click', () => closePanel());
 
-// ─── GPS / Géolocalisation ───────────────────────────────────
+//  GPS / Géolocalisation 
 let watchId = null;
 let gpsActive = false;
 let gpsMarker = null;
@@ -672,7 +690,7 @@ function onGPSError(err) {
   showToast(msgs[err.code] || 'Erreur GPS');
 }
 
-// ─── Toast ───────────────────────────────────────────────────
+//  Toast 
 let toastTimer = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -682,7 +700,7 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-// ─── Resize fix ──────────────────────────────────────────────
+//  Resize fix 
 setTimeout(() => map.invalidateSize(), 200);
 window.addEventListener('resize', () => map.invalidateSize());
 </script>
